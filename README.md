@@ -1,4 +1,4 @@
-<h1 style="text-align: center">EL-ADMIN 后台管理系统</h1>
+<h1 style="text-align: center">EL-ADMIN-MYBATIS-PLUS 后台管理系统</h1>
 <div style="text-align: center">
 
 [![AUR](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](https://github.com/elunez/eladmin/blob/master/LICENSE)
@@ -9,7 +9,33 @@
 </div>
 
 #### 项目简介
-一个基于 Spring Boot 2.1.0 、 Spring Boot Jpa、 JWT、Spring Security、Redis、Vue的前后端分离的后台管理系统
+此项目是一个基于eladmin分支改版的后台管理系统。eladmin项目地址如下：
+
+|     |   后端源码  |   前端源码  |
+|---  |--- | --- |
+|  github   |  https://github.com/elunez/eladmin   |  https://github.com/elunez/eladmin-web   |
+|  码云   |  https://gitee.com/elunez/eladmin   |  https://gitee.com/elunez/eladmin-web   |
+
+此项目主要将eladmin中的Jpa修改成了mybatis-plus。另外针对使用体验做了一些优化。
+此项目是基于Spring Boot 2.1.0 、 Spring Boot、MyBatis-Plus、JWT、Spring Security、Redis、Vue2的前后端分离的后台管理系统。
+
+与原始el-admin相比，主要修改内容如下：
+1、java包名：me.zhengjie修改为com.admin
+2、xxxRepository统一更名为xxxMapper
+3、MapStruct相关的类全部更名为MapStructXxxMapper
+4、根据mybatis-plus的约定：
+   一张数据表对应一个：Java类(POJO)、Mapper、Service、ServiceImpl。
+       其中Mapper统一继承com.baomidou.mybatisplus.core.mapper.BaseMapper并在类的上方打上注解：org.apache.ibatis.annotations.Mapper;org.springframework.stereotype.Component;
+5、Controller的入参Pageable类统一改为IPage。参数自动解析注入见com.admin.convert.PageResolver.java
+6、POJO类删除关联对象(POJO嵌套关联类，使用时自动查询是hibernate和jpa的用法，mybatis-plus只保持与原表一致的字段)。
+   若pojo中包含关联对象属性，使用@TableField(exist = false)标记其不是表的字段。
+7、弃用所有javax.persistence包，这个包主要提供数据表相关的注解，如@Id，@Join等。
+   数据表相关的标记，改用com.baomidou.mybatisplus.annotation包下的注解。
+8、强调说明，数据表对应的pojo主键字段用@TableId进行标记，非主键字段全部要打上@TableField("{数据库字段名}")进行标记。并且eladmin-system的.yml文件中必须设置mybatis-plus.configuration.map-underscore-to-camel-case=false
+   意思是弃用下划线自动转驼峰规则，改用手工指定表字段名的方式。
+   这样修改的原因：eladmin将大部分的pojo的主键用id做统一字段名，因为vue前端数据操作使用id做主键。例如role的主键是roleId但在pojo里字段名为id。
+   而mybatis-plus的map-underscore-to-camel-case规则比较死板，它不会判断有@TableId或@TableField就用标记指定的字段，没有标记的就按驼峰规则。
+   若开启这个参数，则所有字段都按驼峰规则，此时生成的crud语句会变成如insert into role(id,... 实际上应该是insert into role(role_id,...
 
 **开发文档：**  [https://el-admin.vip](https://el-admin.vip)
 
@@ -21,8 +47,8 @@
 
 |     |   后端源码  |   前端源码  |
 |---  |--- | --- |
-|  github   |  https://github.com/elunez/eladmin   |  https://github.com/elunez/eladmin-web   |
-|  码云   |  https://gitee.com/elunez/eladmin   |  https://gitee.com/elunez/eladmin-web   |
+|  github   |  https://github.com/hansonjan/el-admin-mybatis-plus   |  https://github.com/hansonjan/el-admin-vue2   |
+|  码云   |  https://gitee.com/hansonjan/el-admin-mybatis-plus   |  https://gitee.com/hansonjan/el-admin-vue2   |
 
 #### 主要特性
 - 使用最新技术栈，社区资源丰富。

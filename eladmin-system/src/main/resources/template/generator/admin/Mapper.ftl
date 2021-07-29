@@ -1,5 +1,5 @@
 /*
-*  Copyright 2019-2020 Zheng Jie
+*  Copyright 2019-2020 ${author}
 *
 *  Licensed under the Apache License, Version 2.0 (the "License");
 *  you may not use this file except in compliance with the License.
@@ -13,20 +13,20 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 */
-package ${package}.service.mapstruct;
+package ${package}.mapper;
 
-import me.zhengjie.base.BaseMapper;
 import ${package}.domain.${className};
-import ${package}.service.dto.${className}Dto;
-import org.mapstruct.Mapper;
-import org.mapstruct.ReportingPolicy;
-
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Select;
+import org.springframework.stereotype.Component;
 /**
 * @website https://el-admin.vip
 * @author ${author}
 * @date ${date}
 **/
-@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
-public interface ${className}Mapper extends BaseMapper<${className}Dto, ${className}> {
+@Mapper
+@Component
+public interface ${className}Mapper extends BaseMapper<${className}> {
 
 }

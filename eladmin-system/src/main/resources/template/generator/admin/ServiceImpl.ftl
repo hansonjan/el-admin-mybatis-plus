@@ -1,5 +1,5 @@
 /*
-*  Copyright 2019-2020 Zheng Jie
+*  Copyright 2019-2020 ${author}
 *
 *  Licensed under the Apache License, Version 2.0 (the "License");
 *  you may not use this file except in compliance with the License.
@@ -20,19 +20,19 @@ import ${package}.domain.${className};
     <#list columns as column>
         <#if column.columnKey = 'UNI'>
             <#if column_index = 1>
-import me.zhengjie.exception.EntityExistException;
+import com.admin.exception.EntityExistException;
             </#if>
         </#if>
     </#list>
 </#if>
-import me.zhengjie.utils.ValidationUtil;
-import me.zhengjie.utils.FileUtil;
+import com.admin.utils.ValidationUtil;
+import com.admin.utils.FileUtil;
 import lombok.RequiredArgsConstructor;
-import ${package}.repository.${className}Repository;
+import ${package}.mapper.${className}Repository;
 import ${package}.service.${className}Service;
 import ${package}.service.dto.${className}Dto;
 import ${package}.service.dto.${className}QueryCriteria;
-import ${package}.service.mapstruct.${className}Mapper;
+import ${package}.service.mapstruct.MapStruct${className}Mapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 <#if !auto && pkColumnType = 'Long'>
@@ -42,16 +42,18 @@ import cn.hutool.core.util.IdUtil;
 <#if !auto && pkColumnType = 'String'>
 import cn.hutool.core.util.IdUtil;
 </#if>
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import me.zhengjie.utils.PageUtil;
-import me.zhengjie.utils.QueryHelp;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.admin.utils.PageUtil;
+import com.admin.utils.QueryHelp;
 import java.util.List;
 import java.util.Map;
 import java.io.IOException;
 import javax.servlet.http.HttpServletResponse;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
 * @website https://el-admin.vip
@@ -61,28 +63,34 @@ import java.util.LinkedHashMap;
 **/
 @Service
 @RequiredArgsConstructor
-public class ${className}ServiceImpl implements ${className}Service {
+public class ${className}ServiceImpl extends ServiceImpl<${className}Mapper,${className}> implements ${className}Service {
 
-    private final ${className}Repository ${changeClassName}Repository;
-    private final ${className}Mapper ${changeClassName}Mapper;
+    private final MapStruct${className}Mapper mapStruct${className}Mapper;
 
     @Override
-    public Map<String,Object> queryAll(${className}QueryCriteria criteria, Pageable pageable){
-        Page<${className}> page = ${changeClassName}Repository.findAll((root, criteriaQuery, criteriaBuilder) -> QueryHelp.getPredicate(root,criteria,criteriaBuilder),pageable);
-        return PageUtil.toPage(page.map(${changeClassName}Mapper::toDto));
+    public Map<String,Object> queryAll(${className}QueryCriteria criteria, IPage pageable){
+        QueryWrapper<${className}> queryWrapper = (QueryWrapper<${className}>) QueryHelp.getQueryWrapper(criteria, ${className}.class);
+        IPage<${className}> page = this.page(pageable, queryWrapper);
+        List<${className}Dto> collect = page.getRecords().stream().map(mapStruct${className}Mapper::toDto).collect(Collectors.toList());
+        return PageUtil.toPage(page,collect);
     }
 
     @Override
     public List<${className}Dto> queryAll(${className}QueryCriteria criteria){
-        return ${changeClassName}Mapper.toDto(${changeClassName}Repository.findAll((root, criteriaQuery, criteriaBuilder) -> QueryHelp.getPredicate(root,criteria,criteriaBuilder)));
+        QueryWrapper<${className}> queryWrapper = (QueryWrapper<${className}>) QueryHelp.getQueryWrapper(criteria, ${className}.class);
+        List<${className}> list = this.list(queryWrapper);
+        return mapStruct${className}Mapper.toDto(list);
     }
 
     @Override
     @Transactional
     public ${className}Dto findById(${pkColumnType} ${pkChangeColName}) {
-        ${className} ${changeClassName} = ${changeClassName}Repository.findById(${pkChangeColName}).orElseGet(${className}::new);
+        ${className} ${changeClassName} = baseMapper.selectById(${pkChangeColName});
+        if(ObjectUtil.isNull(${changeClassName})){
+            ${changeClassName} = new ${className}();
+        }
         ValidationUtil.isNull(${changeClassName}.get${pkCapitalColName}(),"${className}","${pkChangeColName}",${pkChangeColName});
-        return ${changeClassName}Mapper.toDto(${changeClassName});
+        return mapStruct${className}Mapper.toDto(${changeClassName});
     }
 
     @Override
@@ -98,19 +106,27 @@ public class ${className}ServiceImpl implements ${className}Service {
 <#if columns??>
     <#list columns as column>
     <#if column.columnKey = 'UNI'>
+        ${className} ${changeClassName} = this.getById(resources.getId());
+        if(ObjectUtil.isNotNull(${changeClassName})){
+            throw new EntityExistException(${className}.class,"${column.columnName}",resources.get${column.capitalColumnName}());
+        }
         if(${changeClassName}Repository.findBy${column.capitalColumnName}(resources.get${column.capitalColumnName}()) != null){
             throw new EntityExistException(${className}.class,"${column.columnName}",resources.get${column.capitalColumnName}());
         }
     </#if>
     </#list>
 </#if>
-        return ${changeClassName}Mapper.toDto(${changeClassName}Repository.save(resources));
+        this.saveOrUpdate(resources);
+        return mapStruct${className}Mapper.toDto(resources);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void update(${className} resources) {
-        ${className} ${changeClassName} = ${changeClassName}Repository.findById(resources.get${pkCapitalColName}()).orElseGet(${className}::new);
+        ${className} ${changeClassName} = this.getById(resources.get${pkCapitalColName}());
+        if(ObjectUtil.isNull(${changeClassName})){
+            ${changeClassName} = new ${className}();
+        }
         ValidationUtil.isNull( ${changeClassName}.get${pkCapitalColName}(),"${className}","id",resources.get${pkCapitalColName}());
 <#if columns??>
     <#list columns as column>
@@ -118,22 +134,24 @@ public class ${className}ServiceImpl implements ${className}Service {
         <#if column_index = 1>
         ${className} ${changeClassName}1 = null;
         </#if>
-        ${changeClassName}1 = ${changeClassName}Repository.findBy${column.capitalColumnName}(resources.get${column.capitalColumnName}());
-        if(${changeClassName}1 != null && !${changeClassName}1.get${pkCapitalColName}().equals(${changeClassName}.get${pkCapitalColName}())){
+        LambdaQueryWrapper<${className}> queryWrapper = Wrappers.lambdaQuery(${className}.class);
+        queryWrapper.eq(${className}::get${column.capitalColumnName},resources.get${column.capitalColumnName}());
+
+        ${changeClassName}1 = this.getOne(queryWrapper);
+        if(ObjectUtil.isNotNull(${changeClassName}1) && !${changeClassName}1.get${pkCapitalColName}().equals(${changeClassName}.get${pkCapitalColName}())){
             throw new EntityExistException(${className}.class,"${column.columnName}",resources.get${column.capitalColumnName}());
         }
         </#if>
     </#list>
 </#if>
         ${changeClassName}.copy(resources);
-        ${changeClassName}Repository.save(${changeClassName});
+        this.saveOrUpdate(resources);
     }
 
     @Override
     public void deleteAll(${pkColumnType}[] ids) {
-        for (${pkColumnType} ${pkChangeColName} : ids) {
-            ${changeClassName}Repository.deleteById(${pkChangeColName});
-        }
+        List<${pkColumnType}> idList = Arrays.asList(ids);
+        this.removeByIds(idList);
     }
 
     @Override
